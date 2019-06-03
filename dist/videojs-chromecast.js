@@ -181,6 +181,8 @@ var ChromeCastButton = (function (_Button) {
   }, {
     key: 'onSessionSuccess',
     value: function onSessionSuccess(session) {
+      var _this2 = this;
+
       var image = undefined;
       var key = undefined;
       var loadRequest = undefined;
@@ -239,10 +241,11 @@ var ChromeCastButton = (function (_Button) {
           trackId++;
           track = new chrome.cast.media.Track(trackId, chrome.cast.media.TrackType.TEXT);
           track.trackContentId = remotePlTrack ? remotePlTrack.src : 'caption_' + plTrack.language;
+          track.trackContentType = 'text/vtt';
           track.subtype = chrome.cast.media.TextTrackType.CAPTIONS;
           track.name = plTrack.label;
           track.language = plTrack.language;
-          track.customData = null;
+          track.customData = { mode: plTrack.mode };
           tracks.push(track);
         }
         mediaInfo.textTrackStyle = new chrome.cast.media.TextTrackStyle();
@@ -280,6 +283,17 @@ var ChromeCastButton = (function (_Button) {
 
       loadRequest.autoplay = true;
       loadRequest.currentTime = this.player_.currentTime();
+
+      // Set active track by selected subtitle
+      if (tracks.length && this.options_.customData.defaultCaptionLabel) {
+        var defaultTrack = tracks.find(function (x) {
+          return x.name === _this2.options_.customData.defaultCaptionLabel;
+        });
+
+        if (defaultTrack && defaultTrack.customData.mode === 'showing') {
+          loadRequest.activeTrackIds = [defaultTrack.trackId];
+        }
+      }
 
       this.apiSession.loadMedia(loadRequest, this.onMediaDiscovered.bind(this), this.castError.bind(this));
       this.apiSession.addUpdateListener(this.onSessionUpdate.bind(this));

@@ -202,10 +202,11 @@ class ChromeCastButton extends Button {
         trackId++;
         track = new chrome.cast.media.Track(trackId, chrome.cast.media.TrackType.TEXT);
         track.trackContentId = remotePlTrack ? remotePlTrack.src : 'caption_' + plTrack.language;
+        track.trackContentType = 'text/vtt';
         track.subtype = chrome.cast.media.TextTrackType.CAPTIONS;
         track.name = plTrack.label;
         track.language = plTrack.language;
-        track.customData = null;
+        track.customData = { mode: plTrack.mode };
         tracks.push(track);
       }
       mediaInfo.textTrackStyle = new chrome.cast.media.TextTrackStyle();
@@ -243,6 +244,15 @@ class ChromeCastButton extends Button {
 
     loadRequest.autoplay = true;
     loadRequest.currentTime = this.player_.currentTime();
+
+    // Set active track by selected subtitle
+    if (tracks.length && this.options_.customData.defaultCaptionLabel) {
+      const defaultTrack = tracks.find(x => x.name === this.options_.customData.defaultCaptionLabel);
+
+      if (defaultTrack && defaultTrack.customData.mode === 'showing') {
+        loadRequest.activeTrackIds = [defaultTrack.trackId];
+      }
+    }
 
     this.apiSession.loadMedia(loadRequest, ::this.onMediaDiscovered, ::this.castError);
     this.apiSession.addUpdateListener(::this.onSessionUpdate);
